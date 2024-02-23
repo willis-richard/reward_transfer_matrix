@@ -1,0 +1,5 @@
+name: rtm
+channels:
+  - conda-forge
+dependencies:
+  - scipy
