@@ -3,7 +3,7 @@ from typing import Tuple
 
 import numpy as np
 
-from ..src.payoffs import DTYPE, Winner_nPD, generate_matrix
+from rtm.payoffs import DTYPE, Winner_nPD, generate_matrix
 
 Game = namedtuple("Game", ["payoff_D", "payoff_C"])
 

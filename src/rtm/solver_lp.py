@@ -12,8 +12,8 @@ from typing import Tuple
 import numpy as np
 from scipy.optimize import linprog
 
-from payoffs import generate_matrix
-from entropy import maximise_entropy
+from rtm.payoffs import generate_matrix
+from rtm.entropy import maximise_entropy
 
 def find_e_dash(A):
     # First variable is the diagonal element, second is the off-diagonals

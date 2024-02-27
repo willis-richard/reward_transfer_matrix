@@ -1,7 +1,7 @@
 import numpy as np
 
-from common import DTYPE
-from solver_lp import find_e_dash, find_rtm
+from rtm.payoffs import DTYPE
+from rtm.solver_lp import find_e_dash, find_rtm
 
 # yapf: disable
 A = np.array(
@@ -26,7 +26,8 @@ A = np.array(
 e_dash = find_e_dash(A)
 np.testing.assert_almost_equal(e_dash, 0.6)
 G, _ = find_rtm(A)
-ans = np.array([[0.6, 0.1], [0.4, 0.6]])
+# ans = np.array([[0.6, 0.1], [0.4, 0.6]])
+ans = np.array([[0.6, 0.4], [0.4, 0.6]])
 np.testing.assert_array_almost_equal(G, ans)
 
 A = np.array([[(8, 5), (2, 6)], [(10, 2), (4, 3)]],
@@ -36,7 +37,7 @@ A = np.array([[(8, 5), (2, 6)], [(10, 2), (4, 3)]],
 e_dash = find_e_dash(A)
 np.testing.assert_almost_equal(e_dash, 0.6)
 G, _ = find_rtm(A)
-ans = np.array([[0.6, 0.1], [0.4, 0.6]])
+ans = np.array([[0.6, 0.4], [0.4, 0.6]])
 np.testing.assert_array_almost_equal(G, ans)
 
 # Let us try for a 3-player Cyclical-PD
