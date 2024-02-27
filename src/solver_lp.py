@@ -22,9 +22,9 @@ def find_e_dash(A):
     # maximise self-interest
     cost_function = [-1, 0]
 
-    # rows cannot sum to more than one
-    A_ub_row = [[1, n - 1]]
-    b_ub_row = [1]
+    # rows must sum to one
+    A_eq_row = [[1, n - 1]]
+    b_eq_row = [1]
 
     it = np.nditer(A, flags=['multi_index'])
     A_ub_reward = []
@@ -54,12 +54,11 @@ def find_e_dash(A):
     A_ub_reward = np.vstack(A_ub_reward)
     b_ub_reward = np.zeros(len(A_ub_reward))
 
-    A_ub = np.r_[A_ub_row, A_ub_reward]
-    b_ub = np.concatenate((b_ub_row, b_ub_reward))
-
     res = linprog(cost_function,
-                  A_ub=A_ub,
-                  b_ub=b_ub,
+                  A_ub=A_ub_reward,
+                  b_ub=b_ub_reward,
+                  A_eq=A_eq_row,
+                  b_eq=b_eq_row,
                   bounds=[(1.0 / n, 1), (0, (n - 1) / n)])
 
     assert res.success, res
@@ -83,14 +82,14 @@ def find_rtm(A, balance=False):
     A_ub_aux = np.c_[A_ub_aux, [1] * n]
     b_ub_aux = np.zeros(n)
 
-    # rows cannot sum to more than one
-    A_ub_row = np.zeros((n, n**2))
+    # rows must sum to one
+    A_eq_row = np.zeros((n, n**2))
     rows, cols = np.divmod(np.arange(n**2), n)
     # Use broadcasting to set the appropriate elements to 1
-    A_ub_row[rows, cols + rows * n] = 1
+    A_eq_row[rows, cols + rows * n] = 1
     # append the auxiliary variable
-    A_ub_row = np.c_[A_ub_row, [0] * n]
-    b_ub_row = np.ones(n)
+    A_eq_row = np.c_[A_eq_row, [0] * n]
+    b_eq_row = np.ones(n)
 
     it = np.nditer(A, flags=['multi_index'])
     A_ub_reward = []
@@ -120,11 +119,16 @@ def find_rtm(A, balance=False):
     A_ub_reward = np.vstack(A_ub_reward)
     b_ub_reward = np.zeros(len(A_ub_reward))
 
-    A_ub = np.r_[A_ub_aux, A_ub_row, A_ub_reward]
-    b_ub = np.concatenate((b_ub_aux, b_ub_row, b_ub_reward))
+    A_ub = np.r_[A_ub_aux, A_ub_reward]
+    b_ub = np.concatenate((b_ub_aux, b_ub_reward))
     # print(cost_function, A_ub, b_ub, sep="\n")
 
-    res = linprog(cost_function, A_ub=A_ub, b_ub=b_ub, bounds=(0, 1))
+    res = linprog(cost_function,
+                  A_ub=A_ub,
+                  b_ub=b_ub,
+                  A_eq=A_eq_row,
+                  b_eq=b_eq_row,
+                  bounds=(0, 1))
 
     assert res.success, res
     # print(A_ub.dot(res.x) - b_ub)
@@ -135,7 +139,7 @@ def find_rtm(A, balance=False):
 
     # if n > 2 and balance and 0.0 in G:
     if n > 2 and balance:
-        G = maximise_entropy(G, A_ub_reward[:, :-1], b_ub_reward)
+        G = maximise_entropy(G, A_ub_reward[:, :-1], b_ub_reward, A_eq_row[:, :-1], b_eq_row)
 
     return G, g
 
@@ -240,7 +244,7 @@ if __name__ == '__main__':
         A = generate_matrix(n, game)
 
         e_dash = find_e_dash(A)
-        G, s_dash = find_rtm(A, balance=False)
+        G, s_dash = find_rtm(A, balance=True)
         G_sums = create_G_sums(G)
 
         print_rmt_info(n, A, G, G_sums, e_dash, s_dash)

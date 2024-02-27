@@ -3,7 +3,7 @@ from scipy.optimize import minimize
 from scipy.stats import entropy
 
 
-def maximise_entropy(G, A_ub_reward, b_ub_reward):
+def maximise_entropy(G, A_ub, b_ub, A_eq, b_eq):
     n = G.shape[0]
     diagonals = np.diag(G)
     mask = np.eye(n, dtype=bool)
@@ -16,26 +16,25 @@ def maximise_entropy(G, A_ub_reward, b_ub_reward):
         recombined[mask] = diagonals
         return recombined
 
-    # maximise = - minimise the entropy of non-diagonal elements
+    # maximise the entropy of non-diagonal elements
     def objective(x):
         # return -np.sum(entropy(recombine_diagonals(x), axis=1))
-        # return -np.sum(entropy(x.reshape(n, n-1), axis=1))
-        return -entropy(x)
-
-    # Do not increase the sum of the matrix elements, to keep it minimal
-    def constraint_total_rows(x):
-        return sum_non_diagonals - np.sum(x) + np.finfo(float).eps
+        # return -entropy(x)
+        return -np.sum(entropy(x.reshape(n, n-1), axis=1))
 
     # Original rtm constraints
-    def lp_constraints(x):
-        return b_ub_reward - A_ub_reward.dot(recombine_diagonals(x).flatten()) + np.finfo(float).eps
+    def lp_ub_constraints(x):
+        return b_ub- A_ub.dot(recombine_diagonals(x).flatten()) + np.finfo(float).eps
+
+    def lp_eq_constraints(x):
+        return b_eq- A_eq.dot(recombine_diagonals(x).flatten())
 
     constraints = [{
-        'type': 'ineq',
-        'fun': constraint_total_rows
+        'type': 'eq',
+        'fun': lp_eq_constraints
     }, {
         'type': 'ineq',
-        'fun': lp_constraints
+        'fun': lp_ub_constraints
     }]
 
     res = minimize(

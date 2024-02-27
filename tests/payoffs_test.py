@@ -1,9 +1,9 @@
 from collections import namedtuple
-import numpy as np
 from typing import Tuple
 
-from common import DTYPE
-from payoffs import generate_matrix, Winner_nPD
+import numpy as np
+
+from ..src.payoffs import DTYPE, Winner_nPD, generate_matrix
 
 Game = namedtuple("Game", ["payoff_D", "payoff_C"])
 
