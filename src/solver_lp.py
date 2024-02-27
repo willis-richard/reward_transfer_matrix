@@ -1,5 +1,5 @@
 """
-This algorithm finds the exchange threshold and self-interest level for a
+This script finds the symmetrical and general and self-interest levels for a
 potential n-player game for a several values of n. It first creates all of the
 constraints upon the reward transfer matrix in order to make cooperate the
 dominant action for all players, and uses an optimiser to solve.
@@ -12,7 +12,6 @@ from typing import Tuple
 import numpy as np
 from scipy.optimize import linprog
 
-from common import apply_rt
 from payoffs import generate_matrix
 from entropy import maximise_entropy
 
@@ -141,6 +140,22 @@ def find_rtm(A, balance=False):
     return G, g
 
 
+def apply_rt(A, G):
+    """Apply the reward transfer matrix, G, to the matrix game, A"""
+    it = np.nditer(A, flags=['multi_index'])
+    prt = np.empty_like(A)
+    while not it.finished:
+        values = np.array(it[0].item(0))
+        idx = tuple(it.multi_index)
+        # if row player receives reward, it is redistributed to column
+        # player i receives the outcome * column i
+        prt_values = tuple(np.sum(values * G.transpose(), axis=1))
+        prt[idx] = prt_values
+        it.iternext()
+
+    return prt
+
+
 def print_rmt_info(n, A, G, G_sums, e_dash, s_dash):
     if n == 2:
         E = np.ones(G.shape) * (1 - e_dash) / (n - 1)
@@ -219,8 +234,19 @@ if __name__ == '__main__':
           'all': lambda x: str(fractions.Fraction(x).limit_denominator(500))
       })
 
+    from payoffs import Tycoon_nPD as game
 
-    from payoffs import Functional_form_game as game
+    for n in range(2,5,1):
+        A = generate_matrix(n, game)
+
+        e_dash = find_e_dash(A)
+        G, s_dash = find_rtm(A, balance=False)
+        G_sums = create_G_sums(G)
+
+        print_rmt_info(n, A, G, G_sums, e_dash, s_dash)
+
+
+    # from payoffs import Functional_form_game as game
 
 
     # n=5
@@ -247,10 +273,10 @@ if __name__ == '__main__':
     #     print_rmt_info(n, A, G, G_sums, e_dash, s_dash)
 
 
-    times = []
-    for n in range(2,31,1):
-        A = generate_matrix(n, game)
-        print(n, A.nbytes)
+    # times = []
+    # for n in range(2,31,1):
+    #     A = generate_matrix(n, game)
+    #     print(n, A.nbytes)
 
         # start_time = time.perf_counter()
         # G, s_dash = find_rtm(A, balance=False)
@@ -259,5 +285,5 @@ if __name__ == '__main__':
         # times.append(end_time - start_time)
         # print(n, elapsed_time)
 
-    times = np.array(times).round(2)
+    # times = np.array(times).round(2)
     # np.savetxt("times.txt", times, delimiter=",")

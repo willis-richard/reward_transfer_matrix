@@ -1,17 +1,19 @@
-import numpy as np
+import math
 from typing import Tuple
 
-from common import DTYPE
+import numpy as np
+
+DTYPE = np.float64
 
 
 class BaseGame:
 
     @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3, k=0):
+    def payoff_D(cls, idx: Tuple, pid: int, *args, **kwargs):
         pass
 
     @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3, k=0):
+    def payoff_C(cls, idx: Tuple, pid: int, *args, **kwargs):
         pass
 
 
@@ -36,7 +38,7 @@ def generate_matrix(n, game):
     return M
 
 
-class Tycoon_nPD:
+class Tycoon_nPD(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3, k=0):
@@ -59,7 +61,7 @@ class Tycoon_nPD:
             return k + (c if idx[0] == 0 else 0)
 
 
-class Tycoon_nCH:
+class Tycoon_nCH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3, k=0):
@@ -82,7 +84,7 @@ class Tycoon_nCH:
             return k + (c if idx[0] == 0 else d)
 
 
-class Tycoon_nSH:
+class Tycoon_nSH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -105,7 +107,7 @@ class Tycoon_nSH:
             return c + d if idx[0] == 0 else 0
 
 
-class Symmetrical_nPD:
+class Symmetrical_nPD(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -121,7 +123,7 @@ class Symmetrical_nPD:
         n_C = n - n_D
         return c * (n_C - 1) / (n - 1)
 
-class Cyclical_nPD:
+class Cyclical_nPD(BaseGame):
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
         n = len(idx)
@@ -139,7 +141,7 @@ class Cyclical_nPD:
             return 0
 
 
-class Symmetrical_nCH:
+class Symmetrical_nCH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -156,7 +158,7 @@ class Symmetrical_nCH:
         return c * (n_C - 1) / (n - 1) + d * n_D / (n - 1)
 
 
-class Cyclical_nCH:
+class Cyclical_nCH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -175,7 +177,7 @@ class Cyclical_nCH:
             return d
 
 
-class Symmetrical_nSH:
+class Symmetrical_nSH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -192,7 +194,7 @@ class Symmetrical_nSH:
         return (c + d) * (n_C - 1) / (n - 1)
 
 
-class Cyclical_nSH:
+class Cyclical_nSH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3, k=0):
@@ -211,7 +213,7 @@ class Cyclical_nSH:
             return k + 0
 
 
-class Teams_nPD:
+class Teams_nPD(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c_t=2, c_o=1):
@@ -250,7 +252,7 @@ class Teams_nPD:
         return defect_reward + cooperation_reward
 
 
-class Teams_nCH:
+class Teams_nCH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c_t=2, c_o=1):
@@ -289,7 +291,7 @@ class Teams_nCH:
         return defect_reward + cooperation_reward
 
 
-class Teams_nSH:
+class Teams_nSH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c_t=2, c_o=1):
@@ -328,7 +330,7 @@ class Teams_nSH:
         return defect_reward + cooperation_reward
 
 
-class Local_nPD:
+class Local_nPD(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -380,7 +382,7 @@ class Local_nPD:
         return np.dot(values, weight)
 
 
-class Local_nCH:
+class Local_nCH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -432,7 +434,7 @@ class Local_nCH:
         return np.dot(values, weight)
 
 
-class Local_nSH:
+class Local_nSH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -521,7 +523,7 @@ class Functional_form_game:
         return pid * sw / total_weight
 
 
-class Winner_nPD:
+class Winner_nPD(BaseGame):
     # Defecting gains 1
     # the player at index n_C gets c*n_C
     # SW = n_D + 2*n_C
@@ -571,7 +573,7 @@ class Ladder_connections:
             return np.sum(C_rewards[h + pid - 1:n])
 
 
-class Odds_only_evens_only_nPD:
+class Odds_only_evens_only_nPD(BaseGame):
     # use only 4p
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c_o=3, c_e=2):
@@ -598,7 +600,7 @@ class Odds_only_evens_only_nPD:
             return c_o * (n_C - 1)
 
 
-class Symmetrical_nPD_with_bonus_to_ith_player_defecting:
+class Symmetrical_nPD_with_bonus_to_ith_player_defecting(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -616,7 +618,7 @@ class Symmetrical_nPD_with_bonus_to_ith_player_defecting:
         return c * (n_C - 1) / (n - 1)
 
 
-class Scaled_nPD:
+class Scaled_nPD(BaseGame):
     # returns scaled by pid
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
@@ -634,7 +636,7 @@ class Scaled_nPD:
 
 if __name__ == "__main__":
     from itertools import product
-    import numpy as np
+
     np.set_printoptions(formatter={'float_kind': "{:.2f}".format})
     n = 6
     game = Ladder_connections
