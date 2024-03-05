@@ -7,7 +7,7 @@ dominant action for all players, and uses an optimiser to solve.
 
 import fractions
 import time
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 from scipy.optimize import linprog
@@ -230,6 +230,7 @@ def create_G_sums(G):
                         axis=1)
     return G_sums
 
+
 if __name__ == '__main__':
     np.set_printoptions(linewidth=120)
     np.set_printoptions(formatter={'float_kind': "{:.3f}".format})
@@ -238,10 +239,10 @@ if __name__ == '__main__':
           'all': lambda x: str(fractions.Fraction(x).limit_denominator(500))
       })
 
-    from payoffs import Tycoon_nPD as game
+    from rtm.payoffs import DTYPE, Tycoon_nPD, Functional_form_game
 
-    for n in range(2,5,1):
-        A = generate_matrix(n, game)
+    for n in [3, 10]:
+        A = generate_matrix(n, Tycoon_nPD)
 
         e_dash = find_e_dash(A)
         G, s_dash = find_rtm(A, balance=True)
@@ -249,45 +250,45 @@ if __name__ == '__main__':
 
         print_rmt_info(n, A, G, G_sums, e_dash, s_dash)
 
+    # Arbitrary social dilemma
+    # yapf: disable
+    A = np.array(
+        [[[(9, 6, 7), (2, 9, 7)],
+        [(8, 4, 8), (3, 2, 1)]],
+        [[(1, 6, 12), (0, 5, 2)],
+        [(8, 2, 8), (1, 2, 0)]]],
+        np.dtype([(f'p{i}', DTYPE) for i in range(3)])
+        ).transpose((1, 2, 0))
+    # yapf: enable
+
+    e_dash = find_e_dash(A)
+    G, s_dash = find_rtm(A, balance=True)
+    G_sums = create_G_sums(G)
+
+    print_rmt_info(3, A, G, G_sums, e_dash, s_dash)
 
     # from payoffs import Functional_form_game as game
 
 
-    # n=5
-    # A = generate_matrix(n, game)
+    n = 5
+    A = generate_matrix(n, Functional_form_game)
 
-    # e_dash = find_e_dash(A)
-    # G, s_dash = find_rtm(A, balance=False)
-    # G_sums = create_G_sums(G)
+    e_dash = find_e_dash(A)
+    G, s_dash = find_rtm(A, balance=True)
+    G_sums = create_G_sums(G)
 
-    # print_rmt_info(n, A, G, G_sums, e_dash, s_dash)
+    print_rmt_info(n, A, G, G_sums, e_dash, s_dash)
 
-    # G, s_dash = find_rtm(A, balance=True)
-    # G_sums = create_G_sums(G)
+    times: List[float] = []
+    for n in range(8,18,1):
+        A = generate_matrix(n, Functional_form_game)
 
-    # print_rmt_info(n, A, G, G_sums, e_dash, s_dash)
+        start_time = time.perf_counter()
+        G, s_dash = find_rtm(A, balance=False)
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        times.append(end_time - start_time)
+        print(n, A.nbytes, elapsed_time)
 
-    # for n in range(2,19,1):
-    #     A = generate_matrix(n, game)
-
-    #     e_dash = find_e_dash(A)
-    #     G, s_dash = find_rtm(A, balance=False)
-    #     G_sums = create_G_sums(G)
-
-    #     print_rmt_info(n, A, G, G_sums, e_dash, s_dash)
-
-
-    # times = []
-    # for n in range(2,31,1):
-    #     A = generate_matrix(n, game)
-    #     print(n, A.nbytes)
-
-        # start_time = time.perf_counter()
-        # G, s_dash = find_rtm(A, balance=False)
-        # end_time = time.perf_counter()
-        # elapsed_time = end_time - start_time
-        # times.append(end_time - start_time)
-        # print(n, elapsed_time)
-
-    # times = np.array(times).round(2)
-    # np.savetxt("times.txt", times, delimiter=",")
+    times = np.array(times).round(2)
+    np.savetxt("times.txt", times, delimiter=",")
