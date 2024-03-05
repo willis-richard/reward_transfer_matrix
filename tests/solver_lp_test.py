@@ -1,48 +1,49 @@
 import numpy as np
 
 from rtm.payoffs import DTYPE
-from rtm.solver_lp import find_s_dash, find_rtm
+from rtm.solver_lp import find_s_star, find_rtm
 
 # yapf: disable
-A = np.array(
+nfg = np.array(
     [[(3, 3), (0, 4)],
-    [(4, 0), (1, 1)]],
+     [(4, 0), (1, 1)]],
     np.dtype([(f'p{i}', DTYPE) for i in range(2)]))
 # yapf: enable
 
-s_dash = find_s_dash(A)
-np.testing.assert_almost_equal(s_dash, 0.75)
-G, _ = find_rtm(A)
+s_star = find_s_star(nfg)
+np.testing.assert_almost_equal(s_star, 0.75)
+T, _ = find_rtm(nfg)
 ans = np.array([[0.75, 0.25], [0.25, 0.75]])
-np.testing.assert_array_almost_equal(G, ans)
+np.testing.assert_array_almost_equal(T, ans)
 
 # yapf: disable
-A = np.array(
+nfg = np.array(
     [[(6, 3), (0, 4)],
      [(8, 0), (2, 1)]],
     np.dtype([(f'p{i}', DTYPE) for i in range(2)]))
 # yapf: enable
 
-s_dash = find_s_dash(A)
-np.testing.assert_almost_equal(s_dash, 0.6)
-G, _ = find_rtm(A)
+s_star = find_s_star(nfg)
+np.testing.assert_almost_equal(s_star, 0.6)
+T, _ = find_rtm(nfg)
 # ans = np.array([[0.6, 0.1], [0.4, 0.6]])
 ans = np.array([[0.6, 0.4], [0.4, 0.6]])
-np.testing.assert_array_almost_equal(G, ans)
+np.testing.assert_array_almost_equal(T, ans)
 
-A = np.array([[(8, 5), (2, 6)], [(10, 2), (4, 3)]],
-             np.dtype([(f'p{i}', DTYPE) for i in range(2)]))
+nfg = np.array([[(8, 5), (2, 6)],
+                [(10, 2), (4, 3)]],
+               np.dtype([(f'p{i}', DTYPE) for i in range(2)]))
 # yapf: enable
 
-s_dash = find_s_dash(A)
-np.testing.assert_almost_equal(s_dash, 0.6)
-G, _ = find_rtm(A)
+s_star = find_s_star(nfg)
+np.testing.assert_almost_equal(s_star, 0.6)
+T, _ = find_rtm(nfg)
 ans = np.array([[0.6, 0.4], [0.4, 0.6]])
-np.testing.assert_array_almost_equal(G, ans)
+np.testing.assert_array_almost_equal(T, ans)
 
 # Let us try for a 3-player Cyclical-PD
 # yapf: disable
-A = np.array(
+nfg = np.array(
     [[[(3, 3, 3), (3, 4, 0)],
       [(4, 0, 3), (4, 1, 0)]],
      [[(0, 3, 4), (0, 4, 1)],
@@ -51,36 +52,24 @@ A = np.array(
 ).transpose((1, 2, 0))
 # yapf: enable
 
-s_dash = find_s_dash(A)
-np.testing.assert_almost_equal(s_dash, 0.6)
-G, _ = find_rtm(A)
+s_star = find_s_star(nfg)
+np.testing.assert_almost_equal(s_star, 0.6)
+T, _ = find_rtm(nfg)
 ans = np.array([[0.75, 0, 0.25], [0.25, 0.75, 0], [0, 0.25, 0.75]])
 
 # 3-player Symmetrical-nPD
 # yapf: disable
-A = np.array(
+nfg = np.array(
     [[[(3, 3, 3), (1.5, 4, 1.5)],
       [(4, 1.5, 1.5), (2.5, 2.5, 0)]],
      [[(1.5, 1.5, 4), (0, 2.5, 2.5)],
       [(2.5, 0, 2.5), (1, 1, 1)]]],
-             np.dtype([(f'p{i}', DTYPE) for i in range(3)])).transpose(
-                 (1, 2, 0))
+             np.dtype([(f'p{i}', DTYPE) for i in range(3)])
+).transpose((1, 2, 0))
 # yapf: enable
 
-s_dash = find_s_dash(A)
-np.testing.assert_almost_equal(s_dash, 0.6)
-G, _ = find_rtm(A, balance=True)
+s_star = find_s_star(nfg)
+np.testing.assert_almost_equal(s_star, 0.6)
+T, _ = find_rtm(nfg, balance=True)
 ans = np.array([[0.6, 0.2, 0.2], [0.2, 0.6, 0.2], [0.2, 0.2, 0.6]])
-np.testing.assert_array_almost_equal(G, ans)
-
-
-# game that shows you need a constraint even when a player does not (currently) benefit from defecint
-# yapf: disable
-A = np.array(
-    [[[(3, 3, 3), (3, 4, 0)],
-    [(4, 0, 3), (4, 1, 0)]],
-    [[(0, 3, 4), (0, 4, 1)],
-    [(0, 4, 3), (1, 1, 1)]]],
-    np.dtype([(f'p{i}', DTYPE) for i in range(3)])
-    ).transpose((1, 2, 0))
-# yapf: enable
+np.testing.assert_array_almost_equal(T, ans)

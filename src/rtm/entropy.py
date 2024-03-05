@@ -3,15 +3,15 @@ from scipy.optimize import minimize
 from scipy.stats import entropy
 
 
-def maximise_entropy(G, A_ub, b_ub, A_eq, b_eq):
-    n = G.shape[0]
-    diagonals = np.diag(G)
+def maximise_entropy(T, A_ub, b_ub, A_eq, b_eq):
+    n = T.shape[0]
+    diagonals = np.diag(T)
     mask = np.eye(n, dtype=bool)
-    non_diagonal_elements = G[~mask].flatten()
+    non_diagonal_elements = T[~mask].flatten()
     sum_non_diagonals = np.sum(non_diagonal_elements)
 
     def recombine_diagonals(x):
-        recombined = np.zeros_like(G)
+        recombined = np.zeros_like(T)
         recombined[~mask] = x
         recombined[mask] = diagonals
         return recombined
@@ -52,6 +52,6 @@ def maximise_entropy(G, A_ub, b_ub, A_eq, b_eq):
 
     assert res.success, res
 
-    G = recombine_diagonals(res.x)
+    T = recombine_diagonals(res.x)
 
-    return G
+    return T

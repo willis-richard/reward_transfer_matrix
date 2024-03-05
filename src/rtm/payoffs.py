@@ -1,4 +1,5 @@
 import math
+from itertools import product
 from typing import Tuple
 
 import numpy as np
@@ -36,6 +37,118 @@ def generate_matrix(n, game):
         it.iternext()
 
     return M
+
+
+def print_game_by_action_profile(n, game):
+    for c in product([0, 1], repeat=n):
+        print(c, np.array([payoff(game, c, i + 1) for i in range(n)]))
+
+
+class Symmetrical_nPD(BaseGame):
+
+    @classmethod
+    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return d + c * n_C / (n - 1)
+
+    @classmethod
+    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return c * (n_C - 1) / (n - 1)
+
+
+class Symmetrical_nCH(BaseGame):
+
+    @classmethod
+    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return (d + c) * n_C / (n - 1)
+
+    @classmethod
+    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return c * (n_C - 1) / (n - 1) + d * n_D / (n - 1)
+
+
+class Symmetrical_nSH(BaseGame):
+
+    @classmethod
+    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return c * n_C / (n - 1) + d * (n_D - 1) / (n - 1)
+
+    @classmethod
+    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return (c + d) * (n_C - 1) / (n - 1)
+
+
+class Cyclical_nPD(BaseGame):
+    @classmethod
+    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        if idx[pid % n] == 0:
+            return d + c
+        else:
+            return d
+
+    @classmethod
+    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        if idx[pid % n] == 0:
+            return c
+        else:
+            return 0
+
+
+class Cyclical_nCH(BaseGame):
+
+    @classmethod
+    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        if idx[pid % n] == 0:
+            return d + c
+        else:
+            return 0
+
+    @classmethod
+    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        if idx[pid % n] == 0:
+            return c
+        else:
+            return d
+
+
+class Cyclical_nSH(BaseGame):
+
+    @classmethod
+    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3, k=0):
+        n = len(idx)
+        if idx[pid % n] == 0:
+            return k + c
+        else:
+            return k + 1
+
+    @classmethod
+    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3, k=0):
+        n = len(idx)
+        if idx[pid % n] == 0:
+            return k + c + d
+        else:
+            return k + 0
 
 
 class Tycoon_nPD(BaseGame):
@@ -107,110 +220,232 @@ class Tycoon_nSH(BaseGame):
             return c + d if idx[0] == 0 else 0
 
 
-class Symmetrical_nPD(BaseGame):
+class Circular_nPD(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
         n = len(idx)
         n_D = np.count_nonzero(np.array(idx))
         n_C = n - n_D
-        return d + c * n_C / (n - 1)
+        pids = np.arange(1, n + 1, 1)
+        distance = np.array(
+            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
+
+        distance[pid - 1] = 1
+        weight = (1.0 / 2)**distance
+        weight[pid - 1] = 0
+
+        r_v_c = d + c
+        r_v_d = d
+        values = np.array(idx)
+        c_idx = values == 0
+        d_idx = values == 1
+        values[c_idx] = r_v_c
+        values[d_idx] = r_v_d
+        return np.dot(values, weight)
 
     @classmethod
     def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
         n = len(idx)
         n_D = np.count_nonzero(np.array(idx))
         n_C = n - n_D
-        return c * (n_C - 1) / (n - 1)
+        pids = np.arange(1, n + 1, 1)
+        distance = np.array(
+            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
 
-class Cyclical_nPD(BaseGame):
-    @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        if idx[pid % n] == 0:
-            return d + c
-        else:
-            return d
+        distance[pid - 1] = 1
+        weight = (1.0 / 2)**distance
+        weight[pid - 1] = 0
 
-    @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        if idx[pid % n] == 0:
-            return c
-        else:
-            return 0
+        r_v_c = c
+        r_v_d = 0
+        values = np.array(idx)
+        c_idx = values == 0
+        d_idx = values == 1
+        values[c_idx] = r_v_c
+        values[d_idx] = r_v_d
+        return np.dot(values, weight)
 
 
-class Symmetrical_nCH(BaseGame):
-
-    @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        return (d + c) * n_C / (n - 1)
-
-    @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        return c * (n_C - 1) / (n - 1) + d * n_D / (n - 1)
-
-
-class Cyclical_nCH(BaseGame):
-
-    @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        if idx[pid % n] == 0:
-            return d + c
-        else:
-            return 0
-
-    @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        if idx[pid % n] == 0:
-            return c
-        else:
-            return d
-
-
-class Symmetrical_nSH(BaseGame):
+class Circular_nCH(BaseGame):
 
     @classmethod
     def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
         n = len(idx)
         n_D = np.count_nonzero(np.array(idx))
         n_C = n - n_D
-        return c * n_C / (n - 1) + d * (n_D - 1) / (n - 1)
+        pids = np.arange(1, n + 1, 1)
+        distance = np.array(
+            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
+
+        distance[pid - 1] = 1
+        weight = (1.0 / 2)**distance
+        weight[pid - 1] = 0
+
+        r_v_c = d + c
+        r_v_d = 0
+        values = np.array(idx)
+        c_idx = values == 0
+        d_idx = values == 1
+        values[c_idx] = r_v_c
+        values[d_idx] = r_v_d
+        return np.dot(values, weight)
 
     @classmethod
     def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
         n = len(idx)
         n_D = np.count_nonzero(np.array(idx))
         n_C = n - n_D
-        return (c + d) * (n_C - 1) / (n - 1)
+        pids = np.arange(1, n + 1, 1)
+        distance = np.array(
+            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
+
+        distance[pid - 1] = 1
+        weight = (1.0 / 2)**distance
+        weight[pid - 1] = 0
+
+        r_v_c = c
+        r_v_d = d
+        values = np.array(idx)
+        c_idx = values == 0
+        d_idx = values == 1
+        values[c_idx] = r_v_c
+        values[d_idx] = r_v_d
+        return np.dot(values, weight)
 
 
-class Cyclical_nSH(BaseGame):
+class Circular_nSH(BaseGame):
 
     @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3, k=0):
+    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
         n = len(idx)
-        if idx[pid % n] == 0:
-            return k + c
-        else:
-            return k + 1
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        pids = np.arange(1, n + 1, 1)
+        distance = np.array(
+            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
+
+        distance[pid - 1] = 1
+        weight = (1.0 / 2)**distance
+        weight[pid - 1] = 0
+
+        r_v_c = c
+        r_v_d = d
+        values = np.array(idx)
+        c_idx = values == 0
+        d_idx = values == 1
+        values[c_idx] = r_v_c
+        values[d_idx] = r_v_d
+        return np.dot(values, weight)
 
     @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3, k=0):
+    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
         n = len(idx)
-        if idx[pid % n] == 0:
-            return k + c + d
-        else:
-            return k + 0
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        pids = np.arange(1, n + 1, 1)
+        distance = np.array(
+            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
+
+        distance[pid - 1] = 1
+        weight = (1.0 / 2)**distance
+        weight[pid - 1] = 0
+
+        r_v_c = c + d
+        r_v_d = 0
+        values = np.array(idx)
+        c_idx = values == 0
+        d_idx = values == 1
+        values[c_idx] = r_v_c
+        values[d_idx] = r_v_d
+        return np.dot(values, weight)
+
+
+# Arbitrary social dilemma
+# yapf: disable
+nfg = np.array(
+    [[[(9, 6, 7), (2, 9, 7)],
+      [(8, 4, 8), (3, 2, 1)]],
+     [[(1, 6, 12), (0, 5, 2)],
+      [(8, 2, 8), (1, 2, 0)]]],
+    np.dtype([(f'p{i}', DTYPE) for i in range(3)])
+    ).transpose((1, 2, 0))
+# yapf: enable
+
+
+class Functional_form_game:
+    # d is the relative weight of the social welfare to a defecting agent vs cooperating
+    @classmethod
+    def payoff_D(cls, idx: Tuple, pid: int, d=2, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+
+        sw = -c / n * n_C**2 + 2 * c * n_C
+        total_weight = np.sum((d * np.array(idx) + 1) * np.arange(1, n + 1))
+
+        return d * pid * sw / total_weight
+
+    @classmethod
+    def payoff_C(cls, idx: Tuple, pid: int, d=2, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+
+        sw = -c / n * n_C**2 + 2 * c * n_C
+        total_weight = np.sum((d * np.array(idx) + 1) * np.arange(1, n + 1))
+
+        return pid * sw / total_weight
+
+
+# game that shows you need a constraint even when a player does not (currently)
+# benefit from defecting
+# yapf: disable
+nfg = np.array(
+    [[[(3, 3, 3), (3, 4, 0)],
+      [(4, 0, 3), (4, 1, 0)]],
+     [[(0, 3, 4), (0, 4, 1)],
+      [(0, 4, 3), (1, 1, 1)]]],
+    np.dtype([(f'p{i}', DTYPE) for i in range(3)])
+).transpose((1, 2, 0))
+# yapf: enable
+
+
+
+class Winner_nPD(BaseGame):
+    # Defecting gains 1
+    # the player at index n_C gets c*n_C
+    # SW = n_D + c*n_C
+    @classmethod
+    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=2):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return d + (c * n_C if n_C == pid else 0)
+
+    @classmethod
+    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=2):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return c * n_C if n_C == pid else 0
+
+
+class Scaled_nPD(BaseGame):
+    # returns scaled by pid
+    @classmethod
+    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return pid * (d + c * n_C / (n - 1))
+
+    @classmethod
+    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return pid * c * (n_C - 1) / (n - 1)
 
 
 class Teams_nPD(BaseGame):
@@ -330,218 +565,6 @@ class Teams_nSH(BaseGame):
         return defect_reward + cooperation_reward
 
 
-class Local_nPD(BaseGame):
-
-    @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        pids = np.arange(1, n + 1, 1)
-        distance = np.array(
-            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
-
-        distance[pid - 1] = 1
-        # weight = 1 / distance
-        weight = (1.0 / 2)**distance
-        weight[pid - 1] = 0
-
-        # weight = weight / np.sum(weight)
-        r_v_c = d + c
-        r_v_d = d
-        values = np.array(idx)
-        c_idx = values == 0
-        d_idx = values == 1
-        values[c_idx] = r_v_c
-        values[d_idx] = r_v_d
-        # return d + np.dot(values, weight)
-        return np.dot(values, weight)
-
-    @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        pids = np.arange(1, n + 1, 1)
-        distance = np.array(
-            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
-
-        distance[pid - 1] = 1
-        # weight = 1 / distance
-        weight = (1.0 / 2)**distance
-        weight[pid - 1] = 0
-
-        # weight = weight / np.sum(weight)
-        r_v_c = c
-        r_v_d = 0
-        values = np.array(idx)
-        c_idx = values == 0
-        d_idx = values == 1
-        values[c_idx] = r_v_c
-        values[d_idx] = r_v_d
-        return np.dot(values, weight)
-
-
-class Local_nCH(BaseGame):
-
-    @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        pids = np.arange(1, n + 1, 1)
-        distance = np.array(
-            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
-
-        distance[pid - 1] = 1
-        # weight = 1 / distance
-        weight = (1.0 / 2)**distance
-        weight[pid - 1] = 0
-
-        # weight = weight / np.sum(weight)
-        r_v_c = d + c
-        r_v_d = 0
-        values = np.array(idx)
-        c_idx = values == 0
-        d_idx = values == 1
-        values[c_idx] = r_v_c
-        values[d_idx] = r_v_d
-        # return d + np.dot(values, weight)
-        return np.dot(values, weight)
-
-    @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        pids = np.arange(1, n + 1, 1)
-        distance = np.array(
-            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
-
-        distance[pid - 1] = 1
-        # weight = 1 / distance
-        weight = (1.0 / 2)**distance
-        weight[pid - 1] = 0
-
-        # weight = weight / np.sum(weight)
-        r_v_c = c
-        r_v_d = d
-        values = np.array(idx)
-        c_idx = values == 0
-        d_idx = values == 1
-        values[c_idx] = r_v_c
-        values[d_idx] = r_v_d
-        return np.dot(values, weight)
-
-
-class Local_nSH(BaseGame):
-
-    @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        pids = np.arange(1, n + 1, 1)
-        distance = np.array(
-            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
-
-        distance[pid - 1] = 1
-        # weight = 1 / distance
-        weight = (1.0 / 2)**distance
-        weight[pid - 1] = 0
-
-        # weight = weight / np.sum(weight)
-        r_v_c = c
-        r_v_d = d
-        values = np.array(idx)
-        c_idx = values == 0
-        d_idx = values == 1
-        values[c_idx] = r_v_c
-        values[d_idx] = r_v_d
-        # return d + np.dot(values, weight)
-        return np.dot(values, weight)
-
-    @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        pids = np.arange(1, n + 1, 1)
-        distance = np.array(
-            [min(abs(pid - p), n - abs(pid - p)) for p in pids])
-
-        distance[pid - 1] = 1
-        # weight = 1 / distance
-        weight = (1.0 / 2)**distance
-        weight[pid - 1] = 0
-
-        # weight = weight / np.sum(weight)
-        r_v_c = c + d
-        r_v_d = 0
-        values = np.array(idx)
-        c_idx = values == 0
-        d_idx = values == 1
-        values[c_idx] = r_v_c
-        values[d_idx] = r_v_d
-        return np.dot(values, weight)
-
-
-# Arbitrary social dilemma
-# yapf: disable
-A = np.array(
-    [[[(9, 6, 7), (2, 9, 7)],
-    [(8, 4, 8), (3, 2, 1)]],
-    [[(1, 6, 12), (0, 5, 2)],
-    [(8, 2, 8), (1, 2, 0)]]],
-    np.dtype([(f'p{i}', DTYPE) for i in range(3)])
-    ).transpose((1, 2, 0))
-# yapf: enable
-
-
-class Functional_form_game:
-    # d is the relative weight of the social welfare to a defecting agent vs cooperating
-    @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=2, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-
-        sw = -c / n * n_C**2 + 2 * c * n_C
-        total_weight = np.sum((d * np.array(idx) + 1) * np.arange(1, n + 1))
-
-        return d * pid * sw / total_weight
-
-    @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=2, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-
-        sw = -c / n * n_C**2 + 2 * c * n_C
-        total_weight = np.sum((d * np.array(idx) + 1) * np.arange(1, n + 1))
-
-        return pid * sw / total_weight
-
-
-class Winner_nPD(BaseGame):
-    # Defecting gains 1
-    # the player at index n_C gets c*n_C
-    # SW = n_D + 2*n_C
-    @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=2):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        return d + (c * n_C if n_C == pid else 0)
-
-    @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=2):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        return c * n_C if n_C == pid else 0
-
-
 class Ladder_connections:
 
     @classmethod
@@ -616,29 +639,3 @@ class Symmetrical_nPD_with_bonus_to_ith_player_defecting(BaseGame):
         n_D = np.count_nonzero(np.array(idx))
         n_C = n - n_D
         return c * (n_C - 1) / (n - 1)
-
-
-class Scaled_nPD(BaseGame):
-    # returns scaled by pid
-    @classmethod
-    def payoff_D(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        return pid * (d + c * n_C / (n - 1))
-
-    @classmethod
-    def payoff_C(cls, idx: Tuple, pid: int, d=1, c=3):
-        n = len(idx)
-        n_D = np.count_nonzero(np.array(idx))
-        n_C = n - n_D
-        return pid * c * (n_C - 1) / (n - 1)
-
-if __name__ == "__main__":
-    from itertools import product
-
-    np.set_printoptions(formatter={'float_kind': "{:.2f}".format})
-    n = 6
-    game = Ladder_connections
-    for c in product([0, 1], repeat=n):
-        print(c, np.array([payoff(game, c, i + 1) for i in range(n)]))
