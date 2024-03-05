@@ -15,7 +15,7 @@ from scipy.optimize import linprog
 from rtm.payoffs import generate_matrix
 from rtm.entropy import maximise_entropy
 
-def find_e_dash(A):
+def find_s_dash(A):
     # First variable is the diagonal element, second is the off-diagonals
     n = len(A.shape)
 
@@ -40,9 +40,8 @@ def find_e_dash(A):
                 new_idx[idx] = 1 - p
                 D_rewards = np.array(tuple(A[tuple(new_idx)]))
 
-                # print(it.multi_index, C_rewards, idx, D_rewards)
-
                 diff = C_rewards - D_rewards
+                # print(it.multi_index, C_rewards, idx, D_rewards, diff)
 
                 # sum of player rewards * rtm coefficients must be negative
                 A_ub_reward.append(
@@ -133,7 +132,7 @@ def find_rtm(A, balance=False):
     assert res.success, res
     # print(A_ub.dot(res.x) - b_ub)
 
-    g, x_orig = res.x[-1], res.x[:n**2]
+    g_dash, x_orig = res.x[-1], res.x[:n**2]
 
     G = np.reshape(x_orig, (n, n), 'C')
 
@@ -141,7 +140,7 @@ def find_rtm(A, balance=False):
     if n > 2 and balance:
         G = maximise_entropy(G, A_ub_reward[:, :-1], b_ub_reward, A_eq_row[:, :-1], b_eq_row)
 
-    return G, g
+    return G, g_dash
 
 
 def apply_rt(A, G):
@@ -160,18 +159,18 @@ def apply_rt(A, G):
     return prt
 
 
-def print_rmt_info(n, A, G, G_sums, e_dash, s_dash):
+def print_rmt_info(n, A, G, G_sums, s_dash, g_dash):
     if n == 2:
-        E = np.ones(G.shape) * (1 - e_dash) / (n - 1)
-        np.fill_diagonal(E, e_dash)
+        E = np.ones(G.shape) * (1 - s_dash) / (n - 1)
+        np.fill_diagonal(E, s_dash)
         prt_E = apply_rt(A, E)
         prt = apply_rt(A, G)
         print('A =',
               A,
-              f'e\' = {e_dash}',
+              f'e\' = {s_dash}',
               'prt_E =',
               prt_E,
-              f's\' = {s_dash}',
+              f's\' = {g_dash}',
               'G_sums =',
               G_sums,
               'prt_G =',
@@ -179,16 +178,16 @@ def print_rmt_info(n, A, G, G_sums, e_dash, s_dash):
               sep='\n',
               end='\n\n')
     elif n == 3:
-        E = np.ones(G.shape) * (1 - e_dash) / (n - 1)
-        np.fill_diagonal(E, e_dash)
+        E = np.ones(G.shape) * (1 - s_dash) / (n - 1)
+        np.fill_diagonal(E, s_dash)
         prt_E = apply_rt(A, E)
         prt = apply_rt(A, G)
         print('A =',
               A.transpose(2, 0, 1),
-              f'e\' = {e_dash}',
+              f'e\' = {s_dash}',
               'prt_E =',
               prt_E.transpose(2, 0, 1),
-              f's\' = {s_dash}',
+              f's\' = {g_dash}',
               'G_sums =',
               G_sums,
               'prt_G =',
@@ -196,16 +195,16 @@ def print_rmt_info(n, A, G, G_sums, e_dash, s_dash):
               sep='\n',
               end='\n\n')
     elif n == 4:
-        E = np.ones(G.shape) * (1 - e_dash) / (n - 1)
-        np.fill_diagonal(E, e_dash)
+        E = np.ones(G.shape) * (1 - s_dash) / (n - 1)
+        np.fill_diagonal(E, s_dash)
         prt_E = apply_rt(A, E)
         prt = apply_rt(A, G)
         print('A = ',
               A.transpose(3, 2, 0, 1),
-              f'e\' = {e_dash}',
+              f'e\' = {s_dash}',
               'prt_E = ',
               prt_E.transpose(3, 2, 0, 1),
-              f's\' = {s_dash}',
+              f's\' = {g_dash}',
               'G_sums = ',
               G_sums,
               'prt = ',
@@ -215,9 +214,9 @@ def print_rmt_info(n, A, G, G_sums, e_dash, s_dash):
         # p1 = down 1 row, p2 = across 1 column, p3 down 1 block, p4 = down 2 blocks
         # p1 = down 2 rows, p2 = down 1 row, p3 down 1 block, p4 = down 2 blocks
     elif n < 12:
-        print(f'e\' = {e_dash}', f's\' = {s_dash}', G_sums, sep='\n')
+        print(f'e\' = {s_dash}', f's\' = {g_dash}', G_sums, sep='\n')
     else:
-        print(f'e\' = {e_dash}', f's\' = {s_dash}', sep='\n')
+        print(f'e\' = {s_dash}', f's\' = {g_dash}', sep='\n')
 
 
 def create_G_sums(G):
@@ -244,11 +243,11 @@ if __name__ == '__main__':
     for n in [3, 10]:
         A = generate_matrix(n, Tycoon_nPD)
 
-        e_dash = find_e_dash(A)
-        G, s_dash = find_rtm(A, balance=True)
+        s_dash = find_s_dash(A)
+        G, g_dash = find_rtm(A, balance=True)
         G_sums = create_G_sums(G)
 
-        print_rmt_info(n, A, G, G_sums, e_dash, s_dash)
+        print_rmt_info(n, A, G, G_sums, s_dash, g_dash)
 
     # Arbitrary social dilemma
     # yapf: disable
@@ -261,11 +260,11 @@ if __name__ == '__main__':
         ).transpose((1, 2, 0))
     # yapf: enable
 
-    e_dash = find_e_dash(A)
-    G, s_dash = find_rtm(A, balance=True)
+    s_dash = find_s_dash(A)
+    G, g_dash = find_rtm(A, balance=True)
     G_sums = create_G_sums(G)
 
-    print_rmt_info(3, A, G, G_sums, e_dash, s_dash)
+    print_rmt_info(3, A, G, G_sums, s_dash, g_dash)
 
     # from payoffs import Functional_form_game as game
 
@@ -273,18 +272,18 @@ if __name__ == '__main__':
     n = 5
     A = generate_matrix(n, Functional_form_game)
 
-    e_dash = find_e_dash(A)
-    G, s_dash = find_rtm(A, balance=True)
+    s_dash = find_s_dash(A)
+    G, g_dash = find_rtm(A, balance=True)
     G_sums = create_G_sums(G)
 
-    print_rmt_info(n, A, G, G_sums, e_dash, s_dash)
+    print_rmt_info(n, A, G, G_sums, s_dash, g_dash)
 
     times: List[float] = []
     for n in range(8,18,1):
         A = generate_matrix(n, Functional_form_game)
 
         start_time = time.perf_counter()
-        G, s_dash = find_rtm(A, balance=False)
+        G, g_dash = find_rtm(A, balance=False)
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
         times.append(end_time - start_time)
