@@ -1,7 +1,7 @@
 import numpy as np
 
+from rtm import algorithms
 from rtm.payoffs import DTYPE
-from rtm.solver_lp import find_s_star, find_rtm
 
 # yapf: disable
 nfg = np.array(
@@ -10,9 +10,9 @@ nfg = np.array(
     np.dtype([(f'p{i}', DTYPE) for i in range(2)]))
 # yapf: enable
 
-s_star = find_s_star(nfg)
+s_star = algorithms.find_s_star(nfg)
 np.testing.assert_almost_equal(s_star, 0.75)
-T, _ = find_rtm(nfg)
+T, _, _, _ = algorithms.find_T_star(nfg)
 ans = np.array([[0.75, 0.25], [0.25, 0.75]])
 np.testing.assert_array_almost_equal(T, ans)
 
@@ -23,11 +23,13 @@ nfg = np.array(
     np.dtype([(f'p{i}', DTYPE) for i in range(2)]))
 # yapf: enable
 
-s_star = find_s_star(nfg)
+s_star = algorithms.find_s_star(nfg)
 np.testing.assert_almost_equal(s_star, 0.6)
-T, _ = find_rtm(nfg)
-# ans = np.array([[0.6, 0.1], [0.4, 0.6]])
+T, _, _, _ = algorithms.find_T_star(nfg)
 ans = np.array([[0.6, 0.4], [0.4, 0.6]])
+np.testing.assert_array_almost_equal(T, ans)
+T, _, _, _ = algorithms.find_T_star(nfg, equality=False)
+ans = np.array([[0.6, 0.1], [0.4, 0.6]])
 np.testing.assert_array_almost_equal(T, ans)
 
 nfg = np.array([[(8, 5), (2, 6)],
@@ -35,9 +37,9 @@ nfg = np.array([[(8, 5), (2, 6)],
                np.dtype([(f'p{i}', DTYPE) for i in range(2)]))
 # yapf: enable
 
-s_star = find_s_star(nfg)
+s_star = algorithms.find_s_star(nfg)
 np.testing.assert_almost_equal(s_star, 0.6)
-T, _ = find_rtm(nfg)
+T, _, _, _ = algorithms.find_T_star(nfg)
 ans = np.array([[0.6, 0.4], [0.4, 0.6]])
 np.testing.assert_array_almost_equal(T, ans)
 
@@ -52,9 +54,9 @@ nfg = np.array(
 ).transpose((1, 2, 0))
 # yapf: enable
 
-s_star = find_s_star(nfg)
+s_star = algorithms.find_s_star(nfg)
 np.testing.assert_almost_equal(s_star, 0.6)
-T, _ = find_rtm(nfg)
+T, _, _, _ = algorithms.find_T_star(nfg)
 ans = np.array([[0.75, 0, 0.25], [0.25, 0.75, 0], [0, 0.25, 0.75]])
 
 # 3-player Symmetrical-nPD
@@ -68,8 +70,8 @@ nfg = np.array(
 ).transpose((1, 2, 0))
 # yapf: enable
 
-s_star = find_s_star(nfg)
+s_star = algorithms.find_s_star(nfg)
 np.testing.assert_almost_equal(s_star, 0.6)
-T, _ = find_rtm(nfg, balance=True)
+T, _, _, _ = algorithms.find_T_star(nfg, balance=True)
 ans = np.array([[0.6, 0.2, 0.2], [0.2, 0.6, 0.2], [0.2, 0.2, 0.6]])
 np.testing.assert_array_almost_equal(T, ans)

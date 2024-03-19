@@ -1,3 +1,8 @@
+"""This file defines the payoffs for the games used in the paper, namely
+the Symmetrical, Cyclical, Tycoon and Circular variants, each for either
+Prisoner's Dilemma, Chicken or Stag Hunt base games."""
+
+
 import math
 from itertools import product
 from typing import Tuple
@@ -363,7 +368,7 @@ class Circular_nSH(BaseGame):
 
 # Arbitrary social dilemma
 # yapf: disable
-nfg = np.array(
+arbitrary_social_dilemma = np.array(
     [[[(9, 6, 7), (2, 9, 7)],
       [(8, 4, 8), (3, 2, 1)]],
      [[(1, 6, 12), (0, 5, 2)],
