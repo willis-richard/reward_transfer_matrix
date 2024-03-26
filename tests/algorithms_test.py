@@ -1,7 +1,7 @@
 import numpy as np
 
 from rtm import algorithms
-from rtm.payoffs import DTYPE
+from rtm.payoffs import DTYPE, arbitrary_social_dilemma
 
 # yapf: disable
 nfg = np.array(
@@ -75,3 +75,20 @@ np.testing.assert_almost_equal(s_star, 0.6)
 T, _, _, _ = algorithms.find_T_star(nfg, balance=True)
 ans = np.array([[0.6, 0.2, 0.2], [0.2, 0.6, 0.2], [0.2, 0.2, 0.6]])
 np.testing.assert_array_almost_equal(T, ans)
+
+# Arbitrary social dilemma
+
+s_star = algorithms.find_s_star(arbitrary_social_dilemma)
+np.testing.assert_almost_equal(s_star, 0.36363636)
+T, _, _, _ = algorithms.find_T_star(arbitrary_social_dilemma, balance=False)
+ans = np.array([[0.487, 0.209, 0.304], [0.339, 0.487, 0.174], [0.513, 0.0, 0.487]])
+np.testing.assert_array_almost_equal(T, ans, decimal=3)
+T, _, _, _ = algorithms.find_T_star(arbitrary_social_dilemma, balance=True)
+ans = np.array([[0.487, 0.209, 0.304], [0.426, 0.487, 0.087], [0.426, 0.087, 0.487]])
+np.testing.assert_array_almost_equal(T, ans, decimal=3)
+T, _, _, _ = algorithms.find_T_star(arbitrary_social_dilemma, equality=False, balance=False)
+ans = np.array([[0.487, 0.209, 0.304], [0.339, 0.487, 0], [0.514, 0.0, 0.487]])
+np.testing.assert_array_almost_equal(T, ans, decimal=3)
+T, _, _, _ = algorithms.find_T_star(arbitrary_social_dilemma, equality=False, balance=True)
+ans = np.array([[0.487, 0.209, 0.304], [0.339, 0.487, 0], [0.514, 0.0, 0.487]])
+np.testing.assert_array_almost_equal(T, ans, decimal=3)

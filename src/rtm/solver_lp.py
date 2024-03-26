@@ -1,12 +1,13 @@
+import argparse
+import importlib
 import numpy as np
 
 from rtm import algorithms
-from rtm import payoffs
 
 
 def apply_rt(nfg, T):
     """Apply the reward transfer matrix, T, to the matrix game, nfg"""
-    it = np.nditer(nfg, flags=['multi_index'])
+    it = np.nditer(nfg, flags=["multi_index"])
     prt = np.empty_like(nfg)
     while not it.finished:
         values = np.array(it[0].item(0))
@@ -21,63 +22,45 @@ def apply_rt(nfg, T):
 
 
 def print_rmt_info(n, nfg, T, T_sums, s_star, g_star):
-    if n == 2:
-        E = np.ones(T.shape) * (1 - s_star) / (n - 1)
-        np.fill_diagonal(E, s_star)
-        prt_E = apply_rt(nfg, E)
-        prt = apply_rt(nfg, T)
-        print('nfg =',
-              nfg,
-              f'e\' = {s_star}',
-              'prt_E =',
-              prt_E,
-              f's\' = {g_star}',
-              'T_sums =',
+    def transpose_for_printing(matrix, n):
+        if n == 2:
+            return matrix
+        elif n == 3:
+            return matrix.transpose(2, 0, 1)
+        elif n == 4:
+            return matrix.transpose(3, 2, 0, 1)
+        else:
+            assert False
+
+    if n < 5:
+        S = np.ones(T.shape) * (1 - s_star) / (n - 1)
+        np.fill_diagonal(S, s_star)
+        prt_E = apply_rt(nfg, S)
+        prt_T = apply_rt(nfg, T)
+        print("Normal-form social dilemma:",
+              transpose_for_printing(nfg, n),
+              f"Symmetrical self-interest level, s^* = {s_star:.3f}",
+              "Transformed game under reward exchange given by s^*:",
+              transpose_for_printing(prt_E, n),
+              f"General self-interest level, g^* = {g_star:.3f}",
+              "Minimal reward transfer matrix, T^*, with column and row totals:",
               T_sums,
-              'prt_T =',
-              prt,
-              sep='\n',
-              end='\n\n')
-    elif n == 3:
-        E = np.ones(T.shape) * (1 - s_star) / (n - 1)
-        np.fill_diagonal(E, s_star)
-        prt_E = apply_rt(nfg, E)
-        prt = apply_rt(nfg, T)
-        print('nfg =',
-              nfg.transpose(2, 0, 1),
-              f'e\' = {s_star}',
-              'prt_E =',
-              prt_E.transpose(2, 0, 1),
-              f's\' = {g_star}',
-              'T_sums =',
-              T_sums,
-              'prt_T =',
-              prt.transpose(2, 0, 1),
-              sep='\n',
-              end='\n\n')
-    elif n == 4:
-        E = np.ones(T.shape) * (1 - s_star) / (n - 1)
-        np.fill_diagonal(E, s_star)
-        prt_E = apply_rt(nfg, E)
-        prt = apply_rt(nfg, T)
-        print('nfg = ',
-              nfg.transpose(3, 2, 0, 1),
-              f'e\' = {s_star}',
-              'prt_E = ',
-              prt_E.transpose(3, 2, 0, 1),
-              f's\' = {g_star}',
-              'T_sums = ',
-              T_sums,
-              'prt = ',
-              prt.transpose(3, 2, 0, 1),
-              sep='\n',
-              end='\n\n')
-        # p1 = down 1 row, p2 = across 1 column, p3 down 1 block, p4 = down 2 blocks
-        # p1 = down 2 rows, p2 = down 1 row, p3 down 1 block, p4 = down 2 blocks
+              "Transformed game under reward transfer given by T^*:",
+              transpose_for_printing(prt_T, n),
+              sep="\n\n",
+              end="\n\n\n")
     elif n < 12:
-        print(f'e\' = {s_star}', f's\' = {g_star}', T_sums, sep='\n')
+        print(f"Symmetrical self-interest level, s^* = {s_star:.3f}",
+              f"General self-interest level, g^* = {g_star:.3f}",
+              "Minimal reward transfer matrix, T^*, with column and row totals:",
+              T_sums,
+              sep="\n\n",
+              end="\n\n\n")
     else:
-        print(f'e\' = {s_star}', f's\' = {g_star}', sep='\n')
+        print(f"Symmetrical self-interest level, s^* = {s_star:.3f}",
+              f"General self-interest level, g^* = {g_star:.3f}",
+              sep="\n",
+              end="\n\n")
 
 
 def create_T_sums(T):
@@ -91,45 +74,72 @@ def create_T_sums(T):
     return T_sums
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     np.set_printoptions(linewidth=120)
-    np.set_printoptions(formatter={'float_kind': "{:.3f}".format})
+    np.set_printoptions(formatter={"float_kind": "{:.3f}".format})
 
-    for n in [3, 6]:
-        nfg = payoffs.generate_matrix(n, payoffs.Tycoon_nPD)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--game",
+                        choices=["arbitrary_social_dilemma",
+                                 "Functional_form_game",
+                                 "Symmetrical_nPD",
+                                 "Symmetrical_nCH",
+                                 "Symmetrical_nSH",
+                                 "Cyclical_nPD",
+                                 "Cyclical_nCH",
+                                 "Cyclical_nSH",
+                                 "Tycoon_nPD",
+                                 "Tycoon_nCH",
+                                 "Tycoon_nSH",
+                                 "Circular_nPD",
+                                 "Circular_nCH",
+                                 "Circular_nSH"],
+                        help="The name of the game to solve")
+
+    args = parser.parse_args()
+
+    payoffs = importlib.import_module("rtm.payoffs")
+    game = getattr(payoffs, args.game)
+
+    if args.game == "Functional_form_game":
+        n = 5
+        nfg = payoffs.generate_matrix(n, game)
 
         s_star = algorithms.find_s_star(nfg)
         T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
         T_sums = create_T_sums(T)
 
+        print(f"Solving for {args.game} with {n} players")
         print_rmt_info(n, nfg, T, T_sums, s_star, g_star)
 
-    nfg = payoffs.arbitrary_social_dilemma
+        print("Time to form and solve the game as follows:")
+        times = []
+        for n in range(8, 18, 1):
+            nfg = payoffs.generate_matrix(n, game)
 
-    s_star = algorithms.find_s_star(nfg)
-    T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
-    T_sums = create_T_sums(T)
+            T, g_star, formulation_time, solver_time = algorithms.find_T_star(nfg, balance=False)
+            times.append(formulation_time + solver_time)
+            print(
+                f"n: {n}, num bytes: {nfg.nbytes}, formulation_time: {formulation_time:.2f}, solver_time: {solver_time:.2f}, total_time: {formulation_time+solver_time:.2f}"
+            )
 
-    print_rmt_info(3, nfg, T, T_sums, s_star, g_star)
+        print(times)
 
-    n = 5
-    nfg = payoffs.generate_matrix(n, payoffs.Functional_form_game)
+    elif args.game == "arbitrary_social_dilemma":
+        s_star = algorithms.find_s_star(game)
+        T, g_star, _, _ = algorithms.find_T_star(game, balance=True)
+        T_sums = create_T_sums(T)
 
-    s_star = algorithms.find_s_star(nfg)
-    T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
-    T_sums = create_T_sums(T)
+        print(f"Solving for {args.game}")
+        print_rmt_info(3, game, T, T_sums, s_star, g_star)
 
-    print_rmt_info(n, nfg, T, T_sums, s_star, g_star)
+    else:
+        for n in range(3, 6):
+            nfg = payoffs.generate_matrix(n, game)
 
-    times = []
-    for n in range(8, 18, 1):
-        nfg = payoffs.generate_matrix(n, payoffs.Functional_form_game)
+            s_star = algorithms.find_s_star(nfg)
+            T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
+            T_sums = create_T_sums(T)
 
-        T, g_star, formulation_time, solver_time = algorithms.find_T_star(nfg, balance=False)
-        times.append(formulation_time + solver_time)
-        print(
-            f"n: {n}, num bytes: {nfg.nbytes}, formulation_time: {formulation_time:.2f}, solver_time: {solver_time:.2f}, total_time: {formulation_time+solver_time:.2f}"
-        )
-
-    times = np.array(times).round(2)
-    np.savetxt("times.txt", times, delimiter=",")
+            print(f"Solving for {args.game} with {n} players")
+            print_rmt_info(n, nfg, T, T_sums, s_star, g_star)

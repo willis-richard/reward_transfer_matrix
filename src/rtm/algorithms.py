@@ -1,7 +1,5 @@
-from copy import deepcopy
-from itertools import product
 import time
-from typing import Optional, Tuple
+from typing import Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -110,15 +108,14 @@ def find_T_star(nfg: NDArray,
         3. float: Time taken to form the constraints.
         4. float: Time taken to solve the linear program.
     """
-    # we assume the variables are of the following form:
-    # the reward transfer matrix flattened with the auxiliary variable appended
-    # Instead of maximising the minimum of the diagonals, we will minimise
-    # the auxiliary variable, z, subject to z being less than the diagonals
     start_time = time.perf_counter()
 
     n = len(nfg.shape)
 
-    # minimise auxiliary variable z
+    # Instead of maximising the minimum of the diagonals, we will minimise
+    # the auxiliary variable, z, subject to z being less than the diagonals
+    # We assume the variables are of the following form:
+    # the flattened reward transfer matrix with the auxiliary variable appended
     cost_function = [0] * n**2 + [-1]
 
     # require z be less than the diagonal elements
@@ -192,24 +189,34 @@ def find_T_star(nfg: NDArray,
 
     T = np.reshape(x_orig, (n, n), 'C')
 
+    # Only worth balancing for 3 or more players
     if n > 2 and balance:
-        if equality:
-            T = maximise_entropy(T, A_reward[:, :-1], b_reward, A_row[:, :-1],
-                                 b_row)
-        else:
-            T = maximise_entropy(T, np.r_[A_reward[:, :-1], A_row[:, :-1]],
-                                 np.r_[b_reward, b_row], None, None)
+        T = maximise_entropy(T, A_reward[:, :-1])
 
     return T, g_star, checkpoint_time - start_time, end_time - checkpoint_time
 
 
-def maximise_entropy(T: NDArray, A_ub: NDArray, b_ub: NDArray,
-                     A_eq: Optional[NDArray], b_eq: Optional[NDArray]):
+def maximise_entropy(T: NDArray, A_reward: NDArray):
+    """
+    Find the reward transfer matrix with each row having the greatest entropy
+    of the non-diagonal elements.
+
+    Parameters
+    ----------
+    T : NDArray
+        An n by n reward transfer matrix.
+
+    A_reward : NDArray
+        The coefficients of the inequalities that ensure cooperation is dominant
+    Returns
+    -------
+    NDArray
+        The entropy maximising reward transfer matrix
+    """
     n = T.shape[0]
     diagonals = np.diag(T)
     mask = np.eye(n, dtype=bool)
-    non_diagonal_elements = T[~mask].flatten()
-    sum_non_diagonals = np.sum(non_diagonal_elements)
+    non_diagonal_elements = T[~mask]
 
     def recombine_diagonals(x):
         recombined = np.zeros_like(T)
@@ -217,39 +224,42 @@ def maximise_entropy(T: NDArray, A_ub: NDArray, b_ub: NDArray,
         recombined[mask] = diagonals
         return recombined
 
-    # maximise the entropy of non-diagonal elements
+    # maximise the sum of the entropy of non-diagonal elements for each row
     def objective(x):
-        # return -np.sum(entropy(recombine_diagonals(x), axis=1))
-        # return -entropy(x)
-        return -np.sum(entropy(x.reshape(n, n - 1), axis=1))
+       return -np.sum(entropy(x.reshape(n, n - 1), axis=1))
 
-    # Original rtm constraints
+    b_reward = np.zeros(len(A_reward))
+
+    # Original rtm constraints that ensure cooperation is dominant
     def lp_ub_constraints(x):
-        return b_ub - A_ub.dot(
+        return b_reward - A_reward.dot(
             recombine_diagonals(x).flatten()) + np.finfo(float).eps
 
-    def lp_eq_constraints(x):
-        return b_eq - A_eq.dot(recombine_diagonals(x).flatten())
+    # Each row should sum to the same value
+    def row_sum_constraints(x):
+        return np.sum(T, axis=1) - np.sum(recombine_diagonals(x),
+                                          axis=1)
 
-    constraints = [{'type': 'ineq', 'fun': lp_ub_constraints}]
-
-    if A_eq is not None:
-        constraints += [{'type': 'eq', 'fun': lp_eq_constraints}]
+    constraints = [
+        {'type': 'ineq', 'fun': lp_ub_constraints},
+        {'type': 'eq', 'fun': row_sum_constraints}
+    ]
 
     res = minimize(
         objective,
-        non_diagonal_elements,
+        non_diagonal_elements.flatten(),
         method='SLSQP',
         bounds=[(0, 1)] * n * (n - 1),
         constraints=constraints,
-        jac='3-point',
-        options={
-            'maxiter': 200,  # defaults 100
-            'ftol': 1e-7,  # 1e-6
-        })
+        )
 
     assert res.success, res
 
     T = recombine_diagonals(res.x)
 
     return T
+
+# original results ... who cares?
+    # 0.487 & 0.209 & 0.304\\
+    # 0.375 & 0.487 & 0\\
+    # 0.478 & 0 & 0.487

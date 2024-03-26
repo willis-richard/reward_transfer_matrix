@@ -12,7 +12,7 @@ Activate the environment and add the repo to the PYTHONPATH
 
 ```shell
 conda activate rtm
-export PYTHONPATH=$(pwd)
+export PYTHONPATH="$(pwd)/src"
 ```
 
 ## Algorithms
@@ -24,5 +24,11 @@ src.rtm.algorithms contains Algorithm 1 (called find_T_star), which returns a mi
 In order to produce the results from the paper, call
 
 ```shell
-python3 src/rtm/solver_lp.py
+python3 src/rtm/solver_lp.py --game <GAME_NAME>
+```
+
+To see the options, use
+
+```shell
+python3 src/rtm/solver_lp.py --help
 ```
