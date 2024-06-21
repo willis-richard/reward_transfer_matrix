@@ -74,6 +74,8 @@ def find_s_star(nfg: NDArray) -> float:
 
 
 def find_T_star(nfg: NDArray,
+                *,
+                action_profile: Tuple[int] = None,
                 equality: bool = True,
                 balance: bool = False) -> Tuple[NDArray, float, float, float]:
     """
@@ -88,6 +90,13 @@ def find_T_star(nfg: NDArray,
         A normal-form social dilemma. For n>1 players, this is an n dimensional
         matrix, with each dimension having a length of 2. Each element of the
         matrix is an array of length n, specifying the payouts to the players.
+
+    action_profile:
+        If provided, target this outcome to be the dominant action profile. It
+        must be a social welfare optima. This is a relatively untested option,
+        so use with care. Remember that 0 is for defect and 1 for cooperate. For
+        example, to target the outcome (D,C,C), which is when played 1 defects
+        and players 2 and 3 cooperate, use action_profile=(0,1,1).
 
     equality : bool
         If true, require the rows to sum to exactly one, as per the paper.
@@ -111,6 +120,9 @@ def find_T_star(nfg: NDArray,
     start_time = time.perf_counter()
 
     n = len(nfg.shape)
+
+    if action_profile is None:
+        action_profile = (1,) * n
 
     # Instead of maximising the minimum of the diagonals, we will minimise
     # the auxiliary variable, z, subject to z being less than the diagonals
@@ -139,13 +151,15 @@ def find_T_star(nfg: NDArray,
     A_reward = []
     while not it.finished:
         for idx, action in enumerate(it.multi_index):
-            if action == 1:  # the player is cooperating
+            # if the player is cooperating / is playing their action in the
+            # targeted action profile,
+            if action == action_profile[idx]:
                 # find the current payoffs
                 C_rewards = np.array(it[0].item(0))
 
-                # find the payoffs from defecting
+                # find the payoffs from defecting / switching action
                 new_idx = list(it.multi_index)
-                new_idx[idx] = 0
+                new_idx[idx] = int(action ^ 1)
                 D_rewards = np.array(tuple(nfg[tuple(new_idx)]))
 
                 diff = C_rewards - D_rewards

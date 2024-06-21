@@ -378,6 +378,17 @@ arbitrary_social_dilemma = np.array(
 # yapf: enable
 
 
+# yapf: disable
+too_many_cooks_in_prison = np.array(
+    [[[(2, 2, 2), (3/2, 4, 3/2)],
+    [(4, 3/2, 3/2), (5/2, 5/2, 0)]],
+    [[(3/2, 3/2, 4), (0, 5/2, 5/2)],
+    [(5/2, 0, 5/2), (0, 0, 0)]]],
+    np.dtype([(f'p{i}', float) for i in range(3)])
+).transpose((1, 2, 0))
+# yapf: enable
+
+
 class Functional_form_game:
     # d is the relative weight of the social welfare to a defecting agent vs cooperating
     @classmethod

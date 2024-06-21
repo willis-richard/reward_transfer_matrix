@@ -21,7 +21,7 @@ def apply_rt(nfg, T):
     return prt
 
 
-def print_rmt_info(n, nfg, T, T_sums, s_star, g_star):
+def print_rmt_info(n, nfg, T, s_star, g_star):
     def transpose_for_printing(matrix, n):
         if n == 2:
             return matrix
@@ -31,6 +31,16 @@ def print_rmt_info(n, nfg, T, T_sums, s_star, g_star):
             return matrix.transpose(3, 2, 0, 1)
         else:
             assert False
+
+    def create_T_sums(T):
+        """This appends additional rows and columns to the reward transfer matrix,
+        holding the sum for that row/column."""
+        col_sum = np.sum(T, axis=0)
+        row_sum = np.append(np.sum(T, axis=1), 0)
+        T_sums = np.append(np.append(T, np.expand_dims(col_sum, axis=0), axis=0),
+                        np.expand_dims(row_sum, axis=1),
+                        axis=1)
+        return T_sums
 
     if n < 5:
         S = np.ones(T.shape) * (1 - s_star) / (n - 1)
@@ -44,7 +54,7 @@ def print_rmt_info(n, nfg, T, T_sums, s_star, g_star):
               transpose_for_printing(prt_E, n),
               f"General self-interest level, g^* = {g_star:.3f}",
               "Minimal reward transfer matrix, T^*, with column and row totals:",
-              T_sums,
+              create_T_sums(T),
               "Transformed game under reward transfer given by T^*:",
               transpose_for_printing(prt_T, n),
               sep="\n\n",
@@ -53,7 +63,7 @@ def print_rmt_info(n, nfg, T, T_sums, s_star, g_star):
         print(f"Symmetrical self-interest level, s^* = {s_star:.3f}",
               f"General self-interest level, g^* = {g_star:.3f}",
               "Minimal reward transfer matrix, T^*, with column and row totals:",
-              T_sums,
+              create_T_sums(T),
               sep="\n\n",
               end="\n\n\n")
     else:
@@ -63,23 +73,13 @@ def print_rmt_info(n, nfg, T, T_sums, s_star, g_star):
               end="\n\n")
 
 
-def create_T_sums(T):
-    """This appends additional rows and columns to the reward transfer matrix,
-    holding the sum for that row/column."""
-    col_sum = np.sum(T, axis=0)
-    row_sum = np.append(np.sum(T, axis=1), 0)
-    T_sums = np.append(np.append(T, np.expand_dims(col_sum, axis=0), axis=0),
-                       np.expand_dims(row_sum, axis=1),
-                       axis=1)
-    return T_sums
-
-
 if __name__ == "__main__":
     np.set_printoptions(linewidth=120)
     np.set_printoptions(formatter={"float_kind": "{:.3f}".format})
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--game",
+                        required=True,
                         choices=["arbitrary_social_dilemma",
                                  "Functional_form_game",
                                  "Symmetrical_nPD",
@@ -93,7 +93,8 @@ if __name__ == "__main__":
                                  "Tycoon_nSH",
                                  "Circular_nPD",
                                  "Circular_nCH",
-                                 "Circular_nSH"],
+                                 "Circular_nSH",
+                                 "too_many_cooks_in_prison"],
                         help="The name of the game to solve")
 
     args = parser.parse_args()
@@ -103,14 +104,13 @@ if __name__ == "__main__":
 
     if args.game == "Functional_form_game":
         n = 5
+        print(f"Solving for {args.game} with {n} players")
         nfg = payoffs.generate_matrix(n, game)
 
         s_star = algorithms.find_s_star(nfg)
         T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
-        T_sums = create_T_sums(T)
 
-        print(f"Solving for {args.game} with {n} players")
-        print_rmt_info(n, nfg, T, T_sums, s_star, g_star)
+        print_rmt_info(n, nfg, T, s_star, g_star)
 
         print("Time to form and solve the game as follows:")
         times = []
@@ -126,20 +126,31 @@ if __name__ == "__main__":
         print(times)
 
     elif args.game == "arbitrary_social_dilemma":
+        print(f"Solving for {args.game}")
         s_star = algorithms.find_s_star(game)
         T, g_star, _, _ = algorithms.find_T_star(game, balance=True)
-        T_sums = create_T_sums(T)
 
+        print_rmt_info(3, game, T, s_star, g_star)
+
+    elif args.game == "too_many_cooks_in_prison":
         print(f"Solving for {args.game}")
-        print_rmt_info(3, game, T, T_sums, s_star, g_star)
+        s_star = 3/5
+        T, g_star, _, _ = algorithms.find_T_star(game, action_profile=(0,1,1))
 
+        # T = np.array([[3/11, 4/11, 4/11], [0, 3/11, 8/11], [0, 8/11, 3/11]])
+
+        from fractions import Fraction
+        np.set_printoptions(formatter={
+            'all': lambda x: str(Fraction(x).limit_denominator(500))
+        })
+
+        print_rmt_info(3, game, T, s_star, g_star)
     else:
-        for n in range(3, 6):
+        for n in range(2, 6):
+            print(f"Solving for {args.game} with {n} players")
             nfg = payoffs.generate_matrix(n, game)
 
             s_star = algorithms.find_s_star(nfg)
             T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
-            T_sums = create_T_sums(T)
 
-            print(f"Solving for {args.game} with {n} players")
-            print_rmt_info(n, nfg, T, T_sums, s_star, g_star)
+            print_rmt_info(n, nfg, T, s_star, g_star)
