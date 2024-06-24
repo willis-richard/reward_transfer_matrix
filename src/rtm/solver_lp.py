@@ -105,7 +105,7 @@ if __name__ == "__main__":
     if args.game == "Functional_form_game":
         n = 5
         print(f"Solving for {args.game} with {n} players")
-        nfg = payoffs.generate_matrix(n, game)
+        nfg = payoffs.generate_matrix(n, game, d=2, c=3)
 
         s_star = algorithms.find_s_star(nfg)
         T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
@@ -137,18 +137,16 @@ if __name__ == "__main__":
         s_star = 3/5
         T, g_star, _, _ = algorithms.find_T_star(game, action_profile=(0,1,1))
 
-        # T = np.array([[3/11, 4/11, 4/11], [0, 3/11, 8/11], [0, 8/11, 3/11]])
-
         from fractions import Fraction
         np.set_printoptions(formatter={
             'all': lambda x: str(Fraction(x).limit_denominator(500))
         })
 
         print_rmt_info(3, game, T, s_star, g_star)
-    else:
+    else:  # one of the network game variants
         for n in range(2, 6):
             print(f"Solving for {args.game} with {n} players")
-            nfg = payoffs.generate_matrix(n, game)
+            nfg = payoffs.generate_matrix(n, game, d=1, c=3)
 
             s_star = algorithms.find_s_star(nfg)
             T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
