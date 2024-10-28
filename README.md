@@ -1,4 +1,6 @@
-This repository accompanies the paper "Resolving social dilemmas with minimal reward transfer", [arXiv](https://arxiv.org/abs/2310.12928), containing the code required to reproduce its results.
+This repository accompanies the paper "Resolving social dilemmas with minimal reward transfer", [Springer Nature](https://link.springer.com/article/10.1007/s10458-024-09675-4), containing the code required to reproduce its results.
+
+A related paper that uses Multi-agent reinforcement learning and focuses on Markov games can be found at this [repo](https://github.com/willis-richard/meltingpot/).
 
 ## Installation
 
