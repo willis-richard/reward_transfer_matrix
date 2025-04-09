@@ -440,3 +440,20 @@ class Scaled_nPD(BaseGame):
         n_D = np.count_nonzero(np.array(idx))
         n_C = n - n_D
         return pid * c * (n_C - 1) / (n - 1)
+
+
+class PublicGoodsGame(BaseGame):
+
+    @classmethod
+    def payoff_D(cls, idx: tuple[int, ...], pid: int, k=2):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return 1 + k * n_C / n
+
+    @classmethod
+    def payoff_C(cls, idx: tuple[int, ...], pid: int, k=2):
+        n = len(idx)
+        n_D = np.count_nonzero(np.array(idx))
+        n_C = n - n_D
+        return k * n_C / n

@@ -21,7 +21,7 @@ def apply_rt(nfg, T):
     return prt
 
 
-def print_rmt_info(n, nfg, T, s_star, g_star):
+def print_rtm_info(n, nfg, T, s_star, g_star):
     def transpose_for_printing(matrix, n):
         if n == 2:
             return matrix
@@ -94,7 +94,8 @@ if __name__ == "__main__":
                                  "Circular_nPD",
                                  "Circular_nCH",
                                  "Circular_nSH",
-                                 "too_many_cooks_in_prison"],
+                                 "too_many_cooks_in_prison",
+                                 "PublicGoodsGame"],
                         help="The name of the game to solve")
 
     args = parser.parse_args()
@@ -110,7 +111,7 @@ if __name__ == "__main__":
         s_star = algorithms.find_s_star(nfg)
         T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
 
-        print_rmt_info(n, nfg, T, s_star, g_star)
+        print_rtm_info(n, nfg, T, s_star, g_star)
 
         print("Time to form and solve the game as follows:")
         times = []
@@ -130,7 +131,7 @@ if __name__ == "__main__":
         s_star = algorithms.find_s_star(game)
         T, g_star, _, _ = algorithms.find_T_star(game, balance=True)
 
-        print_rmt_info(3, game, T, s_star, g_star)
+        print_rtm_info(3, game, T, s_star, g_star)
 
     elif args.game == "too_many_cooks_in_prison":
         print(f"Solving for {args.game}")
@@ -142,7 +143,17 @@ if __name__ == "__main__":
             'all': lambda x: str(Fraction(x).limit_denominator(500))
         })
 
-        print_rmt_info(3, game, T, s_star, g_star)
+        print_rtm_info(3, game, T, s_star, g_star)
+
+    elif args.game == "PublicGoodsGame":
+        print(f"Solving for {args.game}")
+        for n in range(2, 6):
+            for k in range(1,3):
+                nfg = payoffs.generate_matrix(n, game, k=k)
+
+                s_star = algorithms.find_s_star(nfg)
+                print(f"n={n}, k={k}, s*={s_star}")
+
     else:  # one of the network game variants
         for n in range(2, 6):
             print(f"Solving for {args.game} with {n} players")
@@ -151,4 +162,4 @@ if __name__ == "__main__":
             s_star = algorithms.find_s_star(nfg)
             T, g_star, _, _ = algorithms.find_T_star(nfg, balance=True)
 
-            print_rmt_info(n, nfg, T, s_star, g_star)
+            print_rtm_info(n, nfg, T, s_star, g_star)
